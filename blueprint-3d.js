@@ -51,7 +51,7 @@
     pivot.rotation.y = -0.45;
     scene.add(pivot);
 
-    // ---------- house geometry: cantilevered two-volume composition ----------
+    // ---------- house geometry: one clean cantilevered volume on pilotis ----------
     function boxEdges(cx, cy, cz, w, h, d) {
       const x0 = cx - w / 2, x1 = cx + w / 2;
       const y0 = cy - h / 2, y1 = cy + h / 2;
@@ -68,57 +68,37 @@
         [p['000'], p['010']], [p['100'], p['110']], [p['101'], p['111']], [p['001'], p['011']]
       ];
     }
-    function rectEdges(p0, p1, p2, p3) {
-      return [[p0, p1], [p1, p2], [p2, p3], [p3, p0]];
-    }
-
-    // ground floor (wide, shallow)
-    const A = boxEdges(0, 0.5, 0, 3.2, 1.0, 1.8);
-    // cantilevered upper floor, offset and overhanging past the ground floor
-    const B = boxEdges(-0.3, 1.5, 0.35, 2.6, 1.0, 2.6);
-    // thin flat roof slab, overhanging the upper volume on every side
-    const Roof = boxEdges(-0.3, 2.03, 0.35, 2.9, 0.06, 2.9);
-    // narrow stair/service tower poking above the roofline
-    const Tower = boxEdges(1.0, 2.35, -0.5, 0.6, 1.3, 0.6);
-
-    // ribbon windows, each divided into several panes (not just one mullion)
     function paneWindow(x0, x1, y0, y1, z, panes) {
-      const out = rectEdges(
-        new THREE.Vector3(x0, y0, z), new THREE.Vector3(x0, y1, z),
-        new THREE.Vector3(x1, y1, z), new THREE.Vector3(x1, y0, z)
-      );
+      const out = [
+        [new THREE.Vector3(x0, y0, z), new THREE.Vector3(x0, y1, z)],
+        [new THREE.Vector3(x0, y1, z), new THREE.Vector3(x1, y1, z)],
+        [new THREE.Vector3(x1, y1, z), new THREE.Vector3(x1, y0, z)],
+        [new THREE.Vector3(x1, y0, z), new THREE.Vector3(x0, y0, z)]
+      ];
       for (let i = 1; i < panes; i++) {
         const x = x0 + ((x1 - x0) * i) / panes;
         out.push([new THREE.Vector3(x, y0, z), new THREE.Vector3(x, y1, z)]);
       }
       return out;
     }
-    const w1 = paneWindow(-1.45, 1.45, 0.2, 0.8, 0.9, 4);
-    const w2 = paneWindow(-1.5, 0.6, 1.2, 1.85, 1.65, 3);
-    const w3 = paneWindow(-0.5, 0.5, 0.25, 0.72, -0.9, 2); // small window, back wall of volume A
 
-    // pilotis: slim columns holding up the cantilevered overhang
+    // recessed ground floor
+    const A = boxEdges(0, 0.5, -0.4, 3.0, 1.0, 2.2);
+    // upper volume, cantilevered forward past the ground floor's front face
+    const B = boxEdges(0, 1.5, 0.3, 2.6, 1.0, 3.0);
+
+    // slim columns holding up the overhang, in a single row under it
     const pilotis = [
-      [new THREE.Vector3(-1.35, 0, 1.4), new THREE.Vector3(-1.35, 1.0, 1.4)],
-      [new THREE.Vector3(-0.25, 0, 1.45), new THREE.Vector3(-0.25, 1.0, 1.45)],
-      [new THREE.Vector3(0.85, 0, 1.35), new THREE.Vector3(0.85, 1.0, 1.35)]
+      [new THREE.Vector3(-1.0, 0, 1.1), new THREE.Vector3(-1.0, 1.0, 1.1)],
+      [new THREE.Vector3(0, 0, 1.1), new THREE.Vector3(0, 1.0, 1.1)],
+      [new THREE.Vector3(1.0, 0, 1.1), new THREE.Vector3(1.0, 1.0, 1.1)]
     ];
 
-    // roof parapet along the cantilevered front edge: a rail plus slim balusters
-    const parapetY0 = 2.06, parapetY1 = 2.32, parapetZ = 1.78;
-    const parapet = [
-      [new THREE.Vector3(-1.7, parapetY1, parapetZ), new THREE.Vector3(1.1, parapetY1, parapetZ)]
-    ];
-    for (let i = 0; i <= 6; i++) {
-      const x = -1.7 + (2.8 * i) / 6;
-      parapet.push([new THREE.Vector3(x, parapetY0, parapetZ), new THREE.Vector3(x, parapetY1, parapetZ)]);
-    }
+    // ribbon window on the cantilevered facade, smaller one on the ground floor below
+    const w1 = paneWindow(-1.0, 1.0, 1.3, 1.7, 1.8, 4);
+    const w2 = paneWindow(-0.9, 0.9, 0.3, 0.7, 0.7, 2);
 
-    const segments = [
-      ...A, ...B, ...Roof, ...Tower,
-      ...w1, ...w2, ...w3,
-      ...pilotis, ...parapet
-    ];
+    const segments = [...A, ...B, ...w1, ...w2, ...pilotis];
 
     // ---------- rods: real cylindrical geometry instead of 1px lines ----------
     const RADIUS = 0.017;
