@@ -65,6 +65,12 @@ section{ position:relative; }
   display:flex; justify-content:space-between; align-items:center;
   mix-blend-mode:difference;
   color:#fff;
+  transition: background .3s ease, padding .3s ease;
+}
+.header.is-scrolled{
+  mix-blend-mode:normal; color:var(--ink);
+  background:rgba(238,236,230,.92); backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line); padding-top:16px; padding-bottom:16px;
 }
 .header__logo{ font-weight:800; font-size:17px; letter-spacing:.04em; }
 .header__trigger{ font-size:13px; letter-spacing:.08em; text-transform:uppercase; }

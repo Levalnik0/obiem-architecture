@@ -62,6 +62,17 @@ function initMagnetic(){
   });
 }
 
+/* ---------- Header: solid background once scrolled past the hero photo
+   (fixes the mix-blend-mode header becoming unreadable over body text) ---------- */
+function initHeaderScroll(){
+  const header = document.getElementById('header');
+  const threshold = Math.min(window.innerHeight * 0.7, 480);
+  ScrollTrigger.create({
+    start: 0, end: 'max',
+    onUpdate(){ header.classList.toggle('is-scrolled', window.scrollY > threshold); }
+  });
+}
+
 /* ---------- Menu overlay (single trigger, all breakpoints) ---------- */
 function initMenu(){
   const trigger = document.getElementById('menuTrigger');
@@ -164,6 +175,7 @@ function initAnchors(){
 document.addEventListener('DOMContentLoaded', () => {
   initAnchors();
   initMenu();
+  initHeaderScroll();
   initCursor();
   initMagnetic();
   initReveals();

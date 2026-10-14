@@ -36,8 +36,8 @@
     }
     let size = getSize();
     const camera = new THREE.PerspectiveCamera(30, size.w / size.h, 0.1, 50);
-    camera.position.set(2.9, 1.9, 3.9);
-    camera.lookAt(0, 0.55, 0);
+    camera.position.set(4.3, 2.9, 5.3);
+    camera.lookAt(-0.1, 1.3, 0.2);
     renderer.setSize(size.w, size.h, false);
 
     const ambient = new THREE.AmbientLight(0xfff8ec, 0.75);
@@ -48,43 +48,55 @@
     scene.add(ambient, key, rim);
 
     const pivot = new THREE.Group();
-    pivot.rotation.y = -0.55;
+    pivot.rotation.y = -0.45;
     scene.add(pivot);
 
-    // ---------- house geometry (simple gable box) ----------
-    const hw = 1.5, hd = 1.0, wallH = 1.0, roofH = 0.85;
-    const A = new THREE.Vector3(-hw, 0, -hd), B = new THREE.Vector3(hw, 0, -hd);
-    const C = new THREE.Vector3(hw, 0, hd), D = new THREE.Vector3(-hw, 0, hd);
-    const A2 = new THREE.Vector3(-hw, wallH, -hd), B2 = new THREE.Vector3(hw, wallH, -hd);
-    const C2 = new THREE.Vector3(hw, wallH, hd), D2 = new THREE.Vector3(-hw, wallH, hd);
-    const R1 = new THREE.Vector3(0, wallH + roofH, -hd), R2 = new THREE.Vector3(0, wallH + roofH, hd);
-
-    function door(cx, w, h) {
+    // ---------- house geometry: cantilevered two-volume composition ----------
+    function boxEdges(cx, cy, cz, w, h, d) {
       const x0 = cx - w / 2, x1 = cx + w / 2;
-      const y0 = 0, y1 = h, z = -hd;
-      const p0 = new THREE.Vector3(x0, y0, z), p1 = new THREE.Vector3(x0, y1, z);
-      const p2 = new THREE.Vector3(x1, y1, z), p3 = new THREE.Vector3(x1, y0, z);
+      const y0 = cy - h / 2, y1 = cy + h / 2;
+      const z0 = cz - d / 2, z1 = cz + d / 2;
+      const p = {
+        '000': new THREE.Vector3(x0, y0, z0), '100': new THREE.Vector3(x1, y0, z0),
+        '110': new THREE.Vector3(x1, y1, z0), '010': new THREE.Vector3(x0, y1, z0),
+        '001': new THREE.Vector3(x0, y0, z1), '101': new THREE.Vector3(x1, y0, z1),
+        '111': new THREE.Vector3(x1, y1, z1), '011': new THREE.Vector3(x0, y1, z1)
+      };
+      return [
+        [p['000'], p['100']], [p['100'], p['101']], [p['101'], p['001']], [p['001'], p['000']],
+        [p['010'], p['110']], [p['110'], p['111']], [p['111'], p['011']], [p['011'], p['010']],
+        [p['000'], p['010']], [p['100'], p['110']], [p['101'], p['111']], [p['001'], p['011']]
+      ];
+    }
+    function rectEdges(p0, p1, p2, p3) {
       return [[p0, p1], [p1, p2], [p2, p3], [p3, p0]];
     }
 
-    const segments = [
-      // base
-      [A, B], [B, C], [C, D], [D, A],
-      // walls
-      [A, A2], [B, B2], [C, C2], [D, D2],
-      // eaves
-      [A2, B2], [B2, C2], [C2, D2], [D2, A2],
-      // ridge
-      [R1, R2],
-      // roof slopes
-      [A2, R1], [B2, R1], [C2, R2], [D2, R2],
-      // door / window cutouts on the front face
-      ...door(-0.55, 0.5, 0.62),
-      ...door(0.6, 0.62, 0.78)
-    ];
+    // ground floor (wide, shallow)
+    const A = boxEdges(0, 0.5, 0, 3.2, 1.0, 1.8);
+    // cantilevered upper floor, offset and overhanging past the ground floor
+    const B = boxEdges(-0.3, 1.5, 0.35, 2.6, 1.0, 2.6);
+    // thin flat roof slab, overhanging the upper volume on every side
+    const Roof = boxEdges(-0.3, 2.03, 0.35, 2.9, 0.06, 2.9);
+    // narrow stair/service tower poking above the roofline
+    const Tower = boxEdges(1.0, 2.35, -0.5, 0.6, 1.3, 0.6);
+
+    // ribbon windows
+    const w1 = rectEdges(
+      new THREE.Vector3(-1.45, 0.2, 0.9), new THREE.Vector3(-1.45, 0.8, 0.9),
+      new THREE.Vector3(1.45, 0.8, 0.9), new THREE.Vector3(1.45, 0.2, 0.9)
+    );
+    const w1mullion = [[new THREE.Vector3(0, 0.2, 0.9), new THREE.Vector3(0, 0.8, 0.9)]];
+    const w2 = rectEdges(
+      new THREE.Vector3(-1.5, 1.2, 1.65), new THREE.Vector3(-1.5, 1.85, 1.65),
+      new THREE.Vector3(0.6, 1.85, 1.65), new THREE.Vector3(0.6, 1.2, 1.65)
+    );
+    const w2mullion = [[new THREE.Vector3(-0.45, 1.2, 1.65), new THREE.Vector3(-0.45, 1.85, 1.65)]];
+
+    const segments = [...A, ...B, ...Roof, ...Tower, ...w1, ...w1mullion, ...w2, ...w2mullion];
 
     // ---------- rods: real cylindrical geometry instead of 1px lines ----------
-    const RADIUS = 0.028;
+    const RADIUS = 0.032;
     const rodGeo = new THREE.CylinderGeometry(RADIUS, RADIUS, 1, 8, 1);
     const INK = 0x27241a;
     const UP = new THREE.Vector3(0, 1, 0);
@@ -115,7 +127,7 @@
       drawTweens = [];
       rodObjects.forEach(({ mesh, start, end }, i) => {
         const obj = { t: 0 };
-        const delay = i * 0.045;
+        const delay = i * 0.032;
         const update = () => {
           const cur = start.clone().lerp(end, obj.t);
           placeRod(mesh, start, cur);
