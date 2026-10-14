@@ -98,14 +98,12 @@
     const w1 = paneWindow(-1.0, 1.0, 1.3, 1.7, 1.8, 4);
     const w2 = paneWindow(-0.9, 0.9, 0.3, 0.7, 0.7, 2);
 
-    // build order: foundation, columns, floating volume, glazing last — reads like real construction
-    const segments = [...A, ...pilotis, ...B, ...w1, ...w2];
-
     // ---------- rods: real cylindrical geometry instead of 1px lines ----------
     const RADIUS = 0.011;
     const rodGeo = new THREE.CylinderGeometry(RADIUS, RADIUS, 1, 8, 1);
     const INK = 0xeeece6;
     const UP = new THREE.Vector3(0, 1, 0);
+    const ZERO = new THREE.Vector3(0, 0, 0);
 
     function placeRod(mesh, start, end) {
       const dir = new THREE.Vector3().subVectors(end, start);
@@ -118,39 +116,80 @@
       mesh.quaternion.setFromUnitVectors(UP, dir.normalize());
     }
 
-    const rodObjects = segments.map(([start, end]) => {
-      const mat = new THREE.MeshStandardMaterial({ color: INK, roughness: 0.55, metalness: 0.08 });
-      const mesh = new THREE.Mesh(rodGeo, mat);
-      placeRod(mesh, start, start);
-      pivot.add(mesh);
-      return { mesh, start, end };
+    // ---------- assembly: each structural part arrives on its own, like a real
+    // build sequence — foundation rises out of the ground, columns are erected,
+    // the upper volume is lowered onto them and settles, glazing slides into the
+    // openings last. Far more than a uniform line-draw. ----------
+    const parts = [
+      { segs: A, mode: 'move', from: new THREE.Vector3(0, -1.3, 0), delay: 0, dur: 0.75, ease: 'power3.out' },
+      { segs: pilotis, mode: 'grow', delay: 0.5, dur: 0.5, stagger: 0.08, ease: 'power2.out' },
+      { segs: B, mode: 'move', from: new THREE.Vector3(0, 2.1, 0), delay: 0.85, dur: 0.85, ease: 'back.out(1.5)' },
+      { segs: w1, mode: 'move', from: new THREE.Vector3(0, 0, 1.3), delay: 1.55, dur: 0.55, stagger: 0.02, ease: 'power2.out' },
+      { segs: w2, mode: 'move', from: new THREE.Vector3(0, 0, 1.1), delay: 1.55, dur: 0.55, stagger: 0.02, ease: 'power2.out' }
+    ];
+
+    const rodObjects = [];
+    parts.forEach((part) => {
+      part.group = new THREE.Group();
+      pivot.add(part.group);
+      part.rods = part.segs.map(([start, end]) => {
+        const mat = new THREE.MeshStandardMaterial({ color: INK, roughness: 0.55, metalness: 0.08, transparent: true });
+        const mesh = new THREE.Mesh(rodGeo, mat);
+        placeRod(mesh, start, part.mode === 'grow' ? start : end);
+        part.group.add(mesh);
+        rodObjects.push({ mesh });
+        return { mesh, start, end };
+      });
     });
 
-    // ---------- draw-on animation (grows each rod from start to end) ----------
+    function resetToStart() {
+      parts.forEach((part) => {
+        if (part.mode === 'move') {
+          part.group.position.copy(part.from);
+          part.rods.forEach(({ mesh }) => { mesh.material.opacity = 0; });
+        } else {
+          part.rods.forEach(({ mesh, start }) => { placeRod(mesh, start, start); mesh.material.opacity = 1; });
+        }
+      });
+    }
+    resetToStart();
+
     let drawTweens = [];
+    function runTween(obj, delay, dur, ease, update) {
+      if (window.gsap) {
+        drawTweens.push(window.gsap.to(obj, { t: 1, duration: dur, delay, ease, onUpdate: update }));
+        return;
+      }
+      const startTime = performance.now() + delay * 1000;
+      let raf;
+      function step(now) {
+        obj.t = Math.max(0, Math.min(1, (now - startTime) / (dur * 1000)));
+        update();
+        if (obj.t < 1) raf = requestAnimationFrame(step);
+      }
+      raf = requestAnimationFrame(step);
+      drawTweens.push({ kill() { cancelAnimationFrame(raf); } });
+    }
+
     function playDraw() {
       drawTweens.forEach((t) => t.kill && t.kill());
       drawTweens = [];
-      rodObjects.forEach(({ mesh, start, end }, i) => {
-        const obj = { t: 0 };
-        const delay = i * 0.02;
-        const update = () => {
-          const cur = start.clone().lerp(end, obj.t);
-          placeRod(mesh, start, cur);
-        };
-        if (window.gsap) {
-          drawTweens.push(window.gsap.to(obj, { t: 1, duration: 0.5, delay, ease: 'power2.inOut', onUpdate: update }));
+      resetToStart();
+      parts.forEach((part) => {
+        if (part.mode === 'move') {
+          const obj = { t: 0 };
+          const update = () => {
+            part.group.position.lerpVectors(part.from, ZERO, obj.t);
+            const op = Math.min(1, obj.t * 1.6);
+            part.rods.forEach(({ mesh }) => { mesh.material.opacity = op; });
+          };
+          runTween(obj, part.delay, part.dur, part.ease, update);
         } else {
-          const startTime = performance.now() + delay * 1000;
-          const duration = 500;
-          let raf;
-          function step(now) {
-            obj.t = Math.max(0, Math.min(1, (now - startTime) / duration));
-            update();
-            if (obj.t < 1) raf = requestAnimationFrame(step);
-          }
-          raf = requestAnimationFrame(step);
-          drawTweens.push({ kill() { cancelAnimationFrame(raf); } });
+          part.rods.forEach(({ mesh, start, end }, i) => {
+            const obj = { t: 0 };
+            const update = () => placeRod(mesh, start, start.clone().lerp(end, obj.t));
+            runTween(obj, part.delay + i * part.stagger, part.dur, part.ease, update);
+          });
         }
       });
     }
