@@ -5,6 +5,7 @@
   --ink: #19180f;
   --ink-dim: #6e6a5c;
   --accent: #425c43;
+  --accent-light: #a3c2a1;
   --line: rgba(25,24,15,0.14);
   --ease: cubic-bezier(.16,1,.3,1);
   --container: 1360px;
@@ -144,9 +145,21 @@ section{ position:relative; }
 }
 .philosophy__text h2{ font-size:clamp(28px,3.4vw,44px); margin-bottom:26px; max-width:560px; }
 .philosophy__p{ color:var(--ink-dim); font-size:16px; line-height:1.75; max-width:460px; }
-.philosophy__blueprint{ background:var(--bg-soft); border-radius:2px; padding:20px; aspect-ratio:4/3; cursor:grab; }
+.philosophy__blueprint{
+  position:relative; border-radius:2px; aspect-ratio:4/3; cursor:grab; overflow:hidden;
+  background-color:#15140d;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(238,236,230,.05) 0, rgba(238,236,230,.05) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(238,236,230,.05) 0, rgba(238,236,230,.05) 1px, transparent 1px, transparent 40px);
+}
 .philosophy__blueprint:active{ cursor:grabbing; }
-.philosophy__blueprint canvas{ width:100%; height:100%; display:block; touch-action:none; }
+.philosophy__blueprint canvas{ position:relative; z-index:1; width:100%; height:100%; display:block; touch-action:none; }
+.blueprint__hud{ position:absolute; inset:18px; z-index:2; pointer-events:none; font-family:'IBM Plex Mono', monospace; }
+.blueprint__tag{ position:absolute; font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:rgba(238,236,230,.5); white-space:nowrap; }
+.blueprint__tag--tl{ top:0; left:0; color:var(--accent-light); }
+.blueprint__tag--tr{ top:0; right:0; }
+.blueprint__tag--bl{ bottom:0; left:0; }
+.blueprint__tag--br{ bottom:0; right:0; color:var(--accent-light); }
 @media (max-width:860px){ .philosophy{ grid-template-columns:1fr; padding:100px var(--gutter); } }
 
 /* ===== Approach: accordion list ===== */

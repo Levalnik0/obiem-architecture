@@ -40,10 +40,10 @@
     camera.lookAt(-0.1, 1.3, 0.2);
     renderer.setSize(size.w, size.h, false);
 
-    const ambient = new THREE.AmbientLight(0xfff8ec, 0.75);
-    const key = new THREE.DirectionalLight(0xfff2de, 0.95);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+    const key = new THREE.DirectionalLight(0xffffff, 1.1);
     key.position.set(3, 4, 2);
-    const rim = new THREE.DirectionalLight(0xe8f0ff, 0.4);
+    const rim = new THREE.DirectionalLight(0xa3c2a1, 0.6);
     rim.position.set(-3, 1, -2);
     scene.add(ambient, key, rim);
 
@@ -103,7 +103,7 @@
     // ---------- rods: real cylindrical geometry instead of 1px lines ----------
     const RADIUS = 0.017;
     const rodGeo = new THREE.CylinderGeometry(RADIUS, RADIUS, 1, 8, 1);
-    const INK = 0x27241a;
+    const INK = 0xeeece6;
     const UP = new THREE.Vector3(0, 1, 0);
 
     function placeRod(mesh, start, end) {
