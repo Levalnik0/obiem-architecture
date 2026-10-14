@@ -1,264 +1,240 @@
 /*
- * ОБЪЁМ — 3D-чертёж дома (Three.js r160, обычный <script>, глобальный THREE).
- * Каждое ребро — не плоская линия, а тонкая "рейка" (вытянутый цилиндр с
- * лёгким освещением), которая "отстраивается" от начальной точки к конечной,
- * плюс лёгкое авто-вращение и перетягивание мышью для осмотра со всех сторон.
+ * ОБЪЁМ — 3D-чертёж дома (Three.js r160, ES-модуль, настоящая модель здания).
+ * Грузим реальную CC-BY модель ("Modern House" — henry ham, poly.pizza),
+ * превращаем каждый её фрагмент в тонкие рёбра (EdgesGeometry/LineSegments)
+ * и собираем их на сцене по очереди — часть поднимается снизу, часть
+ * опускается сверху, с нахлёстом по времени, плюс авто-вращение и
+ * перетягивание мышью для осмотра со всех сторон.
  *
- * Подключать ПОСЛЕ three.min.js (и, по возможности, после gsap.min.js —
- * без него используется запасной rAF-твин) и ПЕРЕД script.js.
+ * Подключать как <script type="module"> ПОСЛЕ import map (three + three/addons)
+ * и, по возможности, после gsap.min.js (без него — запасной rAF-твин), ПЕРЕД script.js.
  *
  * API: window.initBlueprint3D(canvasEl) -> { playDraw(), destroy() } | null
  */
-(function () {
-  'use strict';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-  window.initBlueprint3D = function initBlueprint3D(canvasEl) {
-    if (!canvasEl || typeof THREE === 'undefined') return null;
+window.initBlueprint3D = function initBlueprint3D(canvasEl) {
+  if (!canvasEl) return null;
 
-    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const lowEnd = !!(navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const lowEnd = !!(navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
 
-    let renderer;
-    try {
-      renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: true });
-    } catch (err) {
-      return null;
-    }
-    renderer.setPixelRatio(lowEnd ? 1 : Math.min(window.devicePixelRatio || 1, 2));
-    renderer.shadowMap.enabled = false;
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: true });
+  } catch (err) {
+    return null;
+  }
+  renderer.setPixelRatio(lowEnd ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = false;
 
-    const scene = new THREE.Scene();
+  const scene = new THREE.Scene();
 
-    function getSize() {
-      const w = canvasEl.clientWidth || 1;
-      const h = canvasEl.clientHeight || 1;
-      return { w, h };
-    }
-    let size = getSize();
-    const camera = new THREE.PerspectiveCamera(26, size.w / size.h, 0.1, 50);
-    camera.position.set(5.9, 3.9, 7.2);
-    camera.lookAt(-0.1, 1.2, 0.2);
-    renderer.setSize(size.w, size.h, false);
+  function getSize() {
+    const w = canvasEl.clientWidth || 1;
+    const h = canvasEl.clientHeight || 1;
+    return { w, h };
+  }
+  let size = getSize();
+  const camera = new THREE.PerspectiveCamera(26, size.w / size.h, 0.1, 50);
+  camera.position.set(5.9, 3.9, 7.2);
+  camera.lookAt(-0.1, 1.2, 0.2);
+  renderer.setSize(size.w, size.h, false);
 
-    const ambient = new THREE.AmbientLight(0xffffff, 0.85);
-    const key = new THREE.DirectionalLight(0xffffff, 1.1);
-    key.position.set(3, 4, 2);
-    const rim = new THREE.DirectionalLight(0xa3c2a1, 0.6);
-    rim.position.set(-3, 1, -2);
-    scene.add(ambient, key, rim);
+  const pivot = new THREE.Group();
+  pivot.rotation.y = -0.45;
+  scene.add(pivot);
 
-    const pivot = new THREE.Group();
-    pivot.rotation.y = -0.45;
-    scene.add(pivot);
+  const INK = 0xeeece6;
+  const LINE_OPACITY = 0.55;
+  const PANEL_BG = 0x15140d; // matches .philosophy__blueprint background-color
+  const ZERO = new THREE.Vector3(0, 0, 0);
+  const TARGET_DIAG = 4.6; // matches the framing tuned for this camera
 
-    // ---------- house geometry: one clean cantilevered volume on pilotis ----------
-    function boxEdges(cx, cy, cz, w, h, d) {
-      const x0 = cx - w / 2, x1 = cx + w / 2;
-      const y0 = cy - h / 2, y1 = cy + h / 2;
-      const z0 = cz - d / 2, z1 = cz + d / 2;
-      const p = {
-        '000': new THREE.Vector3(x0, y0, z0), '100': new THREE.Vector3(x1, y0, z0),
-        '110': new THREE.Vector3(x1, y1, z0), '010': new THREE.Vector3(x0, y1, z0),
-        '001': new THREE.Vector3(x0, y0, z1), '101': new THREE.Vector3(x1, y0, z1),
-        '111': new THREE.Vector3(x1, y1, z1), '011': new THREE.Vector3(x0, y1, z1)
-      };
-      return [
-        [p['000'], p['100']], [p['100'], p['101']], [p['101'], p['001']], [p['001'], p['000']],
-        [p['010'], p['110']], [p['110'], p['111']], [p['111'], p['011']], [p['011'], p['010']],
-        [p['000'], p['010']], [p['100'], p['110']], [p['101'], p['111']], [p['001'], p['011']]
-      ];
-    }
-    function paneWindow(x0, x1, y0, y1, z, panes) {
-      const out = [
-        [new THREE.Vector3(x0, y0, z), new THREE.Vector3(x0, y1, z)],
-        [new THREE.Vector3(x0, y1, z), new THREE.Vector3(x1, y1, z)],
-        [new THREE.Vector3(x1, y1, z), new THREE.Vector3(x1, y0, z)],
-        [new THREE.Vector3(x1, y0, z), new THREE.Vector3(x0, y0, z)]
-      ];
-      for (let i = 1; i < panes; i++) {
-        const x = x0 + ((x1 - x0) * i) / panes;
-        out.push([new THREE.Vector3(x, y0, z), new THREE.Vector3(x, y1, z)]);
-      }
-      return out;
-    }
+  let parts = [];
+  let ready = false;
+  let pendingPlay = false;
 
-    // recessed ground floor
-    const A = boxEdges(0, 0.5, -0.4, 3.0, 1.0, 2.2);
-    // upper volume, cantilevered forward past the ground floor's front face
-    const B = boxEdges(0, 1.5, 0.3, 2.6, 1.0, 3.0);
+  const loader = new GLTFLoader();
+  loader.load(
+    'assets/models/house.glb',
+    (gltf) => {
+      const root = gltf.scene;
+      root.updateMatrixWorld(true);
 
-    // slim columns holding up the overhang, in a single row under it
-    const pilotis = [
-      [new THREE.Vector3(-1.0, 0, 1.1), new THREE.Vector3(-1.0, 1.0, 1.1)],
-      [new THREE.Vector3(0, 0, 1.1), new THREE.Vector3(0, 1.0, 1.1)],
-      [new THREE.Vector3(1.0, 0, 1.1), new THREE.Vector3(1.0, 1.0, 1.1)]
-    ];
+      const meshes = [];
+      root.traverse((obj) => { if (obj.isMesh) meshes.push(obj); });
+      if (!meshes.length) return;
 
-    // ribbon window on the cantilevered facade, smaller one on the ground floor below
-    const w1 = paneWindow(-1.0, 1.0, 1.3, 1.7, 1.8, 4);
-    const w2 = paneWindow(-0.9, 0.9, 0.3, 0.7, 0.7, 2);
+      const box = new THREE.Box3().setFromObject(root);
+      const center = box.getCenter(new THREE.Vector3());
+      const diag = box.getSize(new THREE.Vector3()).length() || 1;
+      const scale = TARGET_DIAG / diag;
 
-    // ---------- rods: real cylindrical geometry instead of 1px lines ----------
-    const RADIUS = 0.011;
-    const rodGeo = new THREE.CylinderGeometry(RADIUS, RADIUS, 1, 8, 1);
-    const INK = 0xeeece6;
-    const UP = new THREE.Vector3(0, 1, 0);
-    const ZERO = new THREE.Vector3(0, 0, 0);
+      const toOrigin = new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z);
+      const toScale = new THREE.Matrix4().makeScale(scale, scale, scale);
 
-    function placeRod(mesh, start, end) {
-      const dir = new THREE.Vector3().subVectors(end, start);
-      const len = dir.length();
-      mesh.visible = len > 0.0005;
-      if (!mesh.visible) return;
-      const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-      mesh.position.copy(mid);
-      mesh.scale.set(1, len, 1);
-      mesh.quaternion.setFromUnitVectors(UP, dir.normalize());
-    }
+      parts = meshes.map((mesh) => {
+        const worldMatrix = new THREE.Matrix4().copy(toScale).multiply(toOrigin).multiply(mesh.matrixWorld);
 
-    // ---------- assembly: each structural part arrives on its own, like a real
-    // build sequence — foundation rises out of the ground, columns are erected,
-    // the upper volume is lowered onto them and settles, glazing slides into the
-    // openings last. Far more than a uniform line-draw. ----------
-    const parts = [
-      { segs: A, mode: 'move', from: new THREE.Vector3(0, -2.4, 0), delay: 0, dur: 0.9, ease: 'power3.out' },
-      { segs: pilotis, mode: 'grow', delay: 0.65, dur: 0.6, stagger: 0.1, ease: 'power2.out' },
-      { segs: B, mode: 'move', from: new THREE.Vector3(0, 3.4, 0), delay: 1.0, dur: 1.05, ease: 'back.out(1.4)' },
-      { segs: w1, mode: 'move', from: new THREE.Vector3(0, 0, 2.6), delay: 1.95, dur: 0.7, stagger: 0.025, ease: 'power2.out' },
-      { segs: w2, mode: 'move', from: new THREE.Vector3(0, 0, 2.3), delay: 1.95, dur: 0.7, stagger: 0.025, ease: 'power2.out' }
-    ];
+        // hidden-line removal: an occluder mesh painted the panel's own
+        // background color blocks far/interior edges so only the visible
+        // silhouette reads — without it a model this detailed is just a
+        // tangle of every edge seen through every other one.
+        const occluderMat = new THREE.MeshBasicMaterial({
+          color: PANEL_BG, transparent: true, opacity: 0, depthWrite: true,
+          polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 2
+        });
+        const occluder = new THREE.Mesh(mesh.geometry, occluderMat);
+        occluder.matrixAutoUpdate = false;
+        occluder.matrix.copy(worldMatrix);
+        occluder.updateMatrixWorld(true);
 
-    const rodObjects = [];
-    parts.forEach((part) => {
-      part.group = new THREE.Group();
-      pivot.add(part.group);
-      part.rods = part.segs.map(([start, end]) => {
-        const mat = new THREE.MeshStandardMaterial({ color: INK, roughness: 0.55, metalness: 0.08, transparent: true });
-        const mesh = new THREE.Mesh(rodGeo, mat);
-        placeRod(mesh, start, part.mode === 'grow' ? start : end);
-        part.group.add(mesh);
-        rodObjects.push({ mesh });
-        return { mesh, start, end };
+        const edgesGeo = new THREE.EdgesGeometry(mesh.geometry, 45);
+        const mat = new THREE.LineBasicMaterial({ color: INK, transparent: true, opacity: LINE_OPACITY });
+        const line = new THREE.LineSegments(edgesGeo, mat);
+        line.matrixAutoUpdate = false;
+        line.matrix.copy(worldMatrix);
+        line.updateMatrixWorld(true);
+
+        const group = new THREE.Group();
+        group.add(occluder);
+        group.add(line);
+        pivot.add(group);
+
+        const partBox = new THREE.Box3().setFromObject(line);
+        const partCenter = partBox.getCenter(new THREE.Vector3());
+        return { line, occluder, group, minY: partBox.min.y, centerY: partCenter.y };
       });
-    });
 
-    function resetToStart() {
-      parts.forEach((part) => {
-        if (part.mode === 'move') {
-          part.group.position.copy(part.from);
-          part.rods.forEach(({ mesh }) => { mesh.material.opacity = 0; });
-        } else {
-          part.rods.forEach(({ mesh, start }) => { placeRod(mesh, start, start); mesh.material.opacity = 1; });
-        }
+      // bottom-up build order: low parts (base, columns) rise from below,
+      // upper parts (roof, upper volume) drop from above.
+      parts.sort((a, b) => a.minY - b.minY);
+      const midY = (parts[0].minY + parts[parts.length - 1].minY) / 2;
+      parts.forEach((part, i) => {
+        const fromBelow = part.centerY <= midY;
+        part.from = new THREE.Vector3(0, fromBelow ? -3 : 3, 0);
+        part.delay = i * 0.16;
+        part.dur = fromBelow ? 0.75 : 0.9;
+        part.ease = fromBelow ? 'power3.out' : 'back.out(1.35)';
       });
-    }
-    resetToStart();
 
-    let drawTweens = [];
-    function runTween(obj, delay, dur, ease, update) {
-      if (window.gsap) {
-        drawTweens.push(window.gsap.to(obj, { t: 1, duration: dur, delay, ease, onUpdate: update }));
-        return;
-      }
-      const startTime = performance.now() + delay * 1000;
-      let raf;
-      function step(now) {
-        obj.t = Math.max(0, Math.min(1, (now - startTime) / (dur * 1000)));
-        update();
-        if (obj.t < 1) raf = requestAnimationFrame(step);
-      }
-      raf = requestAnimationFrame(step);
-      drawTweens.push({ kill() { cancelAnimationFrame(raf); } });
-    }
-
-    function playDraw() {
-      drawTweens.forEach((t) => t.kill && t.kill());
-      drawTweens = [];
       resetToStart();
-      parts.forEach((part) => {
-        if (part.mode === 'move') {
-          const obj = { t: 0 };
-          const update = () => {
-            part.group.position.lerpVectors(part.from, ZERO, obj.t);
-            const op = Math.min(1, obj.t * 1.6);
-            part.rods.forEach(({ mesh }) => { mesh.material.opacity = op; });
-          };
-          runTween(obj, part.delay, part.dur, part.ease, update);
-        } else {
-          part.rods.forEach(({ mesh, start, end }, i) => {
-            const obj = { t: 0 };
-            const update = () => placeRod(mesh, start, start.clone().lerp(end, obj.t));
-            runTween(obj, part.delay + i * part.stagger, part.dur, part.ease, update);
-          });
-        }
-      });
-    }
+      ready = true;
+      if (pendingPlay) { pendingPlay = false; playDraw(); }
+    },
+    undefined,
+    () => { /* model failed to load — canvas stays empty, no crash */ }
+  );
 
-    // ---------- drag-to-rotate (+ inertia) ----------
-    let isDragging = false, lastX = 0, velY = 0;
-    const DRAG_SENSITIVITY = 0.01, INERTIA_DAMPING = 0.94, EPS = 0.0002;
-    function onPointerDown(e) { isDragging = true; lastX = e.clientX; velY = 0; }
-    function onPointerMove(e) {
-      if (!isDragging) return;
-      const dx = e.clientX - lastX;
-      lastX = e.clientX;
-      velY = dx * DRAG_SENSITIVITY;
+  function resetToStart() {
+    parts.forEach((part) => {
+      part.group.position.copy(part.from);
+      part.line.material.opacity = 0;
+      part.occluder.material.opacity = 0;
+    });
+  }
+
+  let drawTweens = [];
+  function runTween(obj, delay, dur, ease, update) {
+    if (window.gsap) {
+      drawTweens.push(window.gsap.to(obj, { t: 1, duration: dur, delay, ease, onUpdate: update }));
+      return;
+    }
+    const startTime = performance.now() + delay * 1000;
+    let raf;
+    function step(now) {
+      obj.t = Math.max(0, Math.min(1, (now - startTime) / (dur * 1000)));
+      update();
+      if (obj.t < 1) raf = requestAnimationFrame(step);
+    }
+    raf = requestAnimationFrame(step);
+    drawTweens.push({ kill() { cancelAnimationFrame(raf); } });
+  }
+
+  function playDraw() {
+    if (!ready) { pendingPlay = true; return; }
+    drawTweens.forEach((t) => t.kill && t.kill());
+    drawTweens = [];
+    resetToStart();
+    parts.forEach((part) => {
+      const obj = { t: 0 };
+      const update = () => {
+        part.group.position.lerpVectors(part.from, ZERO, obj.t);
+        part.line.material.opacity = Math.min(LINE_OPACITY, obj.t * LINE_OPACITY * 1.6);
+        part.occluder.material.opacity = Math.min(1, obj.t * 1.6);
+      };
+      runTween(obj, part.delay, part.dur, part.ease, update);
+    });
+  }
+
+  // ---------- drag-to-rotate (+ inertia) ----------
+  let isDragging = false, lastX = 0, velY = 0;
+  const DRAG_SENSITIVITY = 0.01, INERTIA_DAMPING = 0.94, EPS = 0.0002;
+  function onPointerDown(e) { isDragging = true; lastX = e.clientX; velY = 0; }
+  function onPointerMove(e) {
+    if (!isDragging) return;
+    const dx = e.clientX - lastX;
+    lastX = e.clientX;
+    velY = dx * DRAG_SENSITIVITY;
+    pivot.rotation.y += velY;
+  }
+  function endDrag() { isDragging = false; }
+  canvasEl.style.touchAction = 'none';
+  canvasEl.addEventListener('pointerdown', onPointerDown);
+  canvasEl.addEventListener('pointermove', onPointerMove);
+  canvasEl.addEventListener('pointerup', endDrag);
+  canvasEl.addEventListener('pointercancel', endDrag);
+  canvasEl.addEventListener('pointerleave', endDrag);
+
+  function onResize() {
+    size = getSize();
+    renderer.setSize(size.w, size.h, false);
+    camera.aspect = size.w / size.h;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', onResize);
+
+  let visible = true;
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver((entries) => { visible = entries[0].isIntersecting; }, { threshold: 0.05 }).observe(canvasEl);
+  }
+
+  const AUTO_SPEED = 0.1;
+  const clock = new THREE.Clock();
+  let rafId = null;
+  function animate() {
+    rafId = requestAnimationFrame(animate);
+    if (!visible) return;
+    const delta = Math.min(clock.getDelta(), 0.05);
+    if (isDragging) {
+      // applied directly in onPointerMove
+    } else if (Math.abs(velY) > EPS) {
       pivot.rotation.y += velY;
+      velY *= INERTIA_DAMPING;
+    } else if (!reduceMotion) {
+      pivot.rotation.y += AUTO_SPEED * delta;
     }
-    function endDrag() { isDragging = false; }
-    canvasEl.style.touchAction = 'none';
-    canvasEl.addEventListener('pointerdown', onPointerDown);
-    canvasEl.addEventListener('pointermove', onPointerMove);
-    canvasEl.addEventListener('pointerup', endDrag);
-    canvasEl.addEventListener('pointercancel', endDrag);
-    canvasEl.addEventListener('pointerleave', endDrag);
+    renderer.render(scene, camera);
+  }
+  animate();
 
-    function onResize() {
-      size = getSize();
-      renderer.setSize(size.w, size.h, false);
-      camera.aspect = size.w / size.h;
-      camera.updateProjectionMatrix();
-    }
-    window.addEventListener('resize', onResize);
+  function destroy() {
+    if (rafId !== null) cancelAnimationFrame(rafId);
+    window.removeEventListener('resize', onResize);
+    canvasEl.removeEventListener('pointerdown', onPointerDown);
+    canvasEl.removeEventListener('pointermove', onPointerMove);
+    canvasEl.removeEventListener('pointerup', endDrag);
+    canvasEl.removeEventListener('pointercancel', endDrag);
+    canvasEl.removeEventListener('pointerleave', endDrag);
+    drawTweens.forEach((t) => t.kill && t.kill());
+    parts.forEach(({ line, occluder }) => {
+      line.geometry.dispose(); line.material.dispose();
+      occluder.geometry.dispose(); occluder.material.dispose();
+    });
+    renderer.dispose();
+  }
 
-    let visible = true;
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver((entries) => { visible = entries[0].isIntersecting; }, { threshold: 0.05 }).observe(canvasEl);
-    }
-
-    const AUTO_SPEED = 0.1;
-    const clock = new THREE.Clock();
-    let rafId = null;
-    function animate() {
-      rafId = requestAnimationFrame(animate);
-      if (!visible) return;
-      const delta = Math.min(clock.getDelta(), 0.05);
-      if (isDragging) {
-        // applied directly in onPointerMove
-      } else if (Math.abs(velY) > EPS) {
-        pivot.rotation.y += velY;
-        velY *= INERTIA_DAMPING;
-      } else if (!reduceMotion) {
-        pivot.rotation.y += AUTO_SPEED * delta;
-      }
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    function destroy() {
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      window.removeEventListener('resize', onResize);
-      canvasEl.removeEventListener('pointerdown', onPointerDown);
-      canvasEl.removeEventListener('pointermove', onPointerMove);
-      canvasEl.removeEventListener('pointerup', endDrag);
-      canvasEl.removeEventListener('pointercancel', endDrag);
-      canvasEl.removeEventListener('pointerleave', endDrag);
-      drawTweens.forEach((t) => t.kill && t.kill());
-      rodObjects.forEach(({ mesh }) => { mesh.material.dispose(); });
-      rodGeo.dispose();
-      renderer.dispose();
-    }
-
-    return { playDraw, destroy };
-  };
-})();
+  return { playDraw, destroy };
+};
