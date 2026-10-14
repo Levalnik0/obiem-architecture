@@ -38,7 +38,7 @@ window.initBlueprint3D = function initBlueprint3D(canvasEl) {
   }
   let size = getSize();
   const camera = new THREE.PerspectiveCamera(26, size.w / size.h, 0.1, 50);
-  camera.position.set(5.9, 3.9, 7.2);
+  camera.position.set(4.25, 2.85, 5.2);
   camera.lookAt(-0.1, 1.2, 0.2);
   renderer.setSize(size.w, size.h, false);
 
