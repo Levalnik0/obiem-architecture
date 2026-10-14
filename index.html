@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ОБЪЁМ — архитектурное бюро</title>
+<meta name="description" content="ОБЪЁМ — архитектурное бюро. Проектируем здания, в которых меньше декора и больше воздуха.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,800;1,400&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%231c1b17%22/></svg>">
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+
+<div class="preloader" id="preloader">
+  <span class="preloader__num" id="preloaderNum">0</span>
+</div>
+
+<header class="header" id="header">
+  <a href="#top" class="header__logo">ОБЪЁМ</a>
+  <button class="header__trigger" id="menuTrigger" aria-expanded="false" aria-controls="menuOverlay">
+    <span>Меню</span>
+  </button>
+</header>
+
+<div class="menu-overlay" id="menuOverlay">
+  <nav class="menu-overlay__nav">
+    <a href="#projects" data-cursor-hover>Проекты</a>
+    <a href="#philosophy" data-cursor-hover>Подход</a>
+    <a href="#approach" data-cursor-hover>Метод</a>
+    <a href="#contact" data-cursor-hover>Контакты</a>
+  </nav>
+  <div class="menu-overlay__meta">
+    <span>Архитектурное бюро</span>
+    <span>info@obiem-studio.ru</span>
+  </div>
+</div>
+
+<main id="top">
+
+  <section class="hero" id="hero">
+    <div class="hero__img" style="background-image:url('assets/img/hero.jpg')"></div>
+    <div class="hero__scrim"></div>
+    <div class="hero__content">
+      <p class="hero__eyebrow reveal-line"><span>Архитектурное бюро</span></p>
+      <h1 class="hero__title">
+        <span class="hero__title-line reveal-up">Больше воздуха,</span>
+        <span class="hero__title-line reveal-up">меньше декора</span>
+      </h1>
+    </div>
+    <div class="hero__scroll">
+      <span>01</span>
+      <i></i>
+      <span>Листать</span>
+    </div>
+  </section>
+
+  <section class="projects" id="projects">
+    <div class="projects__head">
+      <p class="eyebrow">Проекты</p>
+      <h2 class="reveal-up">Шесть объектов, разное время, один язык</h2>
+    </div>
+    <div class="projects__rail-wrap">
+      <div class="projects__rail" id="projectsRail">
+        <article class="project-card">
+          <div class="project-card__img" style="background-image:url('assets/img/project-1.jpg')"></div>
+          <div class="project-card__meta">
+            <span class="project-card__num">01</span>
+            <h3>Дом над склоном</h3>
+            <span>Жилой дом · 2023</span>
+          </div>
+        </article>
+        <article class="project-card">
+          <div class="project-card__img" style="background-image:url('assets/img/project-2.jpg')"></div>
+          <div class="project-card__meta">
+            <span class="project-card__num">02</span>
+            <h3>Галерея света</h3>
+            <span>Культурный центр · 2022</span>
+          </div>
+        </article>
+        <article class="project-card">
+          <div class="project-card__img" style="background-image:url('assets/img/project-3.jpg')"></div>
+          <div class="project-card__meta">
+            <span class="project-card__num">03</span>
+            <h3>Павильон на краю поля</h3>
+            <span>Выставочный павильон · 2021</span>
+          </div>
+        </article>
+        <article class="project-card">
+          <div class="project-card__img" style="background-image:url('assets/img/project-4.jpg')"></div>
+          <div class="project-card__meta">
+            <span class="project-card__num">04</span>
+            <h3>Лестница тишины</h3>
+            <span>Интерьер, частный дом · 2023</span>
+          </div>
+        </article>
+        <article class="project-card">
+          <div class="project-card__img" style="background-image:url('assets/img/project-5.jpg')"></div>
+          <div class="project-card__meta">
+            <span class="project-card__num">05</span>
+            <h3>Корпус на опорах</h3>
+            <span>Офисное здание · 2020</span>
+          </div>
+        </article>
+        <article class="project-card">
+          <div class="project-card__img" style="background-image:url('assets/img/project-6.jpg')"></div>
+          <div class="project-card__meta">
+            <span class="project-card__num">06</span>
+            <h3>Блок у воды</h3>
+            <span>Жилой комплекс · 2019</span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="philosophy" id="philosophy">
+    <div class="philosophy__text">
+      <p class="eyebrow">Подход</p>
+      <h2 class="reveal-up">Мы проектируем здание с конца — с того, как в нём будет падать свет.</h2>
+      <p class="philosophy__p reveal-up">Планировка, материал и конструкция подчинены одному вопросу: что происходит со светом и воздухом внутри объёма в разное время суток. Декор добавляется последним — и часто не добавляется вовсе.</p>
+    </div>
+    <div class="philosophy__blueprint" aria-hidden="true">
+      <svg viewBox="0 0 480 360" id="blueprintSvg">
+        <polyline class="bp-line" points="40,320 40,120 240,40 440,120 440,320" />
+        <polyline class="bp-line" points="40,320 440,320" />
+        <polyline class="bp-line" points="120,320 120,200 200,200 200,320" />
+        <polyline class="bp-line" points="280,320 280,180 360,180 360,320" />
+        <line class="bp-line bp-line--dash" x1="40" y1="120" x2="440" y2="120" />
+        <line class="bp-line bp-line--dash" x1="240" y1="40" x2="240" y2="320" />
+      </svg>
+    </div>
+  </section>
+
+  <section class="approach" id="approach">
+    <div class="approach__head">
+      <p class="eyebrow">Метод</p>
+      <h2 class="reveal-up">Четыре шага, которые не меняются от проекта к проекту</h2>
+    </div>
+    <div class="approach__list">
+      <button class="approach__item is-active" data-step="0">
+        <span class="approach__item-head"><span class="approach__num">01</span><span>Контекст</span><i>+</i></span>
+        <p>Смотрим на участок до того, как рисуем здание: рельеф, соседи, стороны света, то, что уже тут работает.</p>
+      </button>
+      <button class="approach__item" data-step="1">
+        <span class="approach__item-head"><span class="approach__num">02</span><span>Материал</span><i>+</i></span>
+        <p>Один-два материала на весь объект. Чем меньше материалов, тем честнее здание держит форму со временем.</p>
+      </button>
+      <button class="approach__item" data-step="2">
+        <span class="approach__item-head"><span class="approach__num">03</span><span>Свет</span><i>+</i></span>
+        <p>Проёмы рисуются по траектории солнца, а не по фасадной симметрии. Иногда это ломает красивый фасад — и мы его ломаем.</p>
+      </button>
+      <button class="approach__item" data-step="3">
+        <span class="approach__item-head"><span class="approach__num">04</span><span>Деталь</span><i>+</i></span>
+        <p>Последней — одна деталь, которую видно только вблизи: кромка, шов, тень от карниза. Она держит всё здание вместе.</p>
+      </button>
+    </div>
+  </section>
+
+  <section class="contact" id="contact">
+    <p class="eyebrow eyebrow--light">Контакты</p>
+    <h2 class="reveal-up">Обсудим участок?</h2>
+    <a href="mailto:info@obiem-studio.ru" class="contact__email btn-magnetic" data-cursor-hover>info@obiem-studio.ru</a>
+    <a href="tel:+79990000000" class="contact__phone" data-cursor-hover>+7 999 000-00-00</a>
+  </section>
+
+</main>
+
+<footer class="footer" id="footerSection">
+  <div class="footer__img" style="background-image:url('assets/img/footer.jpg')"></div>
+  <div class="footer__scrim"></div>
+  <div class="footer__content">
+    <div class="footer__row">
+      <span class="footer__logo">ОБЪЁМ</span>
+      <span>© 2026</span>
+    </div>
+    <div class="footer__row footer__row--meta">
+      <span>Проектирование частных и общественных зданий</span>
+      <span>Приём по записи</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
