@@ -138,10 +138,9 @@ section{ position:relative; }
 }
 .philosophy__text h2{ font-size:clamp(28px,3.4vw,44px); margin-bottom:26px; max-width:560px; }
 .philosophy__p{ color:var(--ink-dim); font-size:16px; line-height:1.75; max-width:460px; }
-.philosophy__blueprint{ background:var(--bg-soft); border-radius:2px; padding:20px; }
-.philosophy__blueprint svg{ width:100%; height:auto; display:block; }
-.bp-line{ fill:none; stroke:var(--ink); stroke-width:1.5; stroke-linejoin:round; }
-.bp-line--dash{ stroke:var(--ink-dim); stroke-dasharray:4 5; stroke-width:1; }
+.philosophy__blueprint{ background:var(--bg-soft); border-radius:2px; padding:20px; aspect-ratio:4/3; cursor:grab; }
+.philosophy__blueprint:active{ cursor:grabbing; }
+.philosophy__blueprint canvas{ width:100%; height:100%; display:block; touch-action:none; }
 @media (max-width:860px){ .philosophy{ grid-template-columns:1fr; padding:100px var(--gutter); } }
 
 /* ===== Approach: accordion list ===== */

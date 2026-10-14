@@ -123,20 +123,15 @@ function initProjectsRail(){
   });
 }
 
-/* ---------- Blueprint: stroke draw-on-scroll ---------- */
+/* ---------- Blueprint: 3D house that draws itself on scroll ---------- */
 function initBlueprint(){
-  const lines = document.querySelectorAll('#blueprintSvg .bp-line');
-  lines.forEach(line => {
-    const len = line.getTotalLength();
-    line.style.strokeDasharray = len;
-    line.style.strokeDashoffset = reduceMotion ? 0 : len;
-  });
-  if (reduceMotion) return;
+  const canvas = document.getElementById('blueprintCanvas');
+  if (!canvas || typeof window.initBlueprint3D !== 'function') return;
+  const scene3d = window.initBlueprint3D(canvas);
+  if (!scene3d) return;
   ScrollTrigger.create({
     trigger: '.philosophy__blueprint', start: 'top 75%', once: true,
-    onEnter(){
-      gsap.to(lines, { strokeDashoffset: 0, duration: 1.4, ease: 'power2.inOut', stagger: 0.12 });
-    }
+    onEnter(){ scene3d.playDraw(); }
   });
 }
 

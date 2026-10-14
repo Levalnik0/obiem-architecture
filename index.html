@@ -126,14 +126,7 @@
       <p class="philosophy__p reveal-up">Планировка, материал и конструкция подчинены одному вопросу: что происходит со светом и воздухом внутри объёма в разное время суток. Декор добавляется последним — и часто не добавляется вовсе.</p>
     </div>
     <div class="philosophy__blueprint" aria-hidden="true">
-      <svg viewBox="0 0 480 360" id="blueprintSvg">
-        <polyline class="bp-line" points="40,320 40,120 240,40 440,120 440,320" />
-        <polyline class="bp-line" points="40,320 440,320" />
-        <polyline class="bp-line" points="120,320 120,200 200,200 200,320" />
-        <polyline class="bp-line" points="280,320 280,180 360,180 360,320" />
-        <line class="bp-line bp-line--dash" x1="40" y1="120" x2="440" y2="120" />
-        <line class="bp-line bp-line--dash" x1="240" y1="40" x2="240" y2="320" />
-      </svg>
+      <canvas id="blueprintCanvas"></canvas>
     </div>
   </section>
 
@@ -189,6 +182,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="blueprint-3d.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
