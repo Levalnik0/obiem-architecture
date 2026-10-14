@@ -133,7 +133,11 @@ section{ position:relative; }
 .project-card__meta span:last-child{ font-size:13px; color:var(--ink-dim); }
 @media (max-width:860px){
   .projects{ padding-top:100px; }
-  .projects__rail-wrap{ height:auto; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .projects__rail-wrap{
+    height:auto; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    scrollbar-width:none; padding-bottom:4px;
+  }
+  .projects__rail-wrap::-webkit-scrollbar{ display:none; }
   .projects__rail{ transform:none !important; height:auto; }
   .project-card{ height:auto; }
   .project-card__img{ aspect-ratio:4/3; flex:none; }
