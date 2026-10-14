@@ -121,11 +121,11 @@
     // the upper volume is lowered onto them and settles, glazing slides into the
     // openings last. Far more than a uniform line-draw. ----------
     const parts = [
-      { segs: A, mode: 'move', from: new THREE.Vector3(0, -1.3, 0), delay: 0, dur: 0.75, ease: 'power3.out' },
-      { segs: pilotis, mode: 'grow', delay: 0.5, dur: 0.5, stagger: 0.08, ease: 'power2.out' },
-      { segs: B, mode: 'move', from: new THREE.Vector3(0, 2.1, 0), delay: 0.85, dur: 0.85, ease: 'back.out(1.5)' },
-      { segs: w1, mode: 'move', from: new THREE.Vector3(0, 0, 1.3), delay: 1.55, dur: 0.55, stagger: 0.02, ease: 'power2.out' },
-      { segs: w2, mode: 'move', from: new THREE.Vector3(0, 0, 1.1), delay: 1.55, dur: 0.55, stagger: 0.02, ease: 'power2.out' }
+      { segs: A, mode: 'move', from: new THREE.Vector3(0, -2.4, 0), delay: 0, dur: 0.9, ease: 'power3.out' },
+      { segs: pilotis, mode: 'grow', delay: 0.65, dur: 0.6, stagger: 0.1, ease: 'power2.out' },
+      { segs: B, mode: 'move', from: new THREE.Vector3(0, 3.4, 0), delay: 1.0, dur: 1.05, ease: 'back.out(1.4)' },
+      { segs: w1, mode: 'move', from: new THREE.Vector3(0, 0, 2.6), delay: 1.95, dur: 0.7, stagger: 0.025, ease: 'power2.out' },
+      { segs: w2, mode: 'move', from: new THREE.Vector3(0, 0, 2.3), delay: 1.95, dur: 0.7, stagger: 0.025, ease: 'power2.out' }
     ];
 
     const rodObjects = [];

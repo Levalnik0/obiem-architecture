@@ -141,8 +141,9 @@ function initBlueprint(){
   const scene3d = window.initBlueprint3D(canvas);
   if (!scene3d) return;
   ScrollTrigger.create({
-    trigger: '.philosophy__blueprint', start: 'top 75%', once: true,
-    onEnter(){ scene3d.playDraw(); }
+    trigger: '.philosophy__blueprint', start: 'top 80%', end: 'bottom top',
+    onEnter(){ scene3d.playDraw(); },
+    onEnterBack(){ scene3d.playDraw(); }
   });
 }
 
