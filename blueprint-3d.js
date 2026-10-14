@@ -35,9 +35,9 @@
       return { w, h };
     }
     let size = getSize();
-    const camera = new THREE.PerspectiveCamera(30, size.w / size.h, 0.1, 50);
-    camera.position.set(4.3, 2.9, 5.3);
-    camera.lookAt(-0.1, 1.3, 0.2);
+    const camera = new THREE.PerspectiveCamera(26, size.w / size.h, 0.1, 50);
+    camera.position.set(5.9, 3.9, 7.2);
+    camera.lookAt(-0.1, 1.2, 0.2);
     renderer.setSize(size.w, size.h, false);
 
     const ambient = new THREE.AmbientLight(0xffffff, 0.85);
@@ -98,10 +98,11 @@
     const w1 = paneWindow(-1.0, 1.0, 1.3, 1.7, 1.8, 4);
     const w2 = paneWindow(-0.9, 0.9, 0.3, 0.7, 0.7, 2);
 
-    const segments = [...A, ...B, ...w1, ...w2, ...pilotis];
+    // build order: foundation, columns, floating volume, glazing last — reads like real construction
+    const segments = [...A, ...pilotis, ...B, ...w1, ...w2];
 
     // ---------- rods: real cylindrical geometry instead of 1px lines ----------
-    const RADIUS = 0.017;
+    const RADIUS = 0.011;
     const rodGeo = new THREE.CylinderGeometry(RADIUS, RADIUS, 1, 8, 1);
     const INK = 0xeeece6;
     const UP = new THREE.Vector3(0, 1, 0);
